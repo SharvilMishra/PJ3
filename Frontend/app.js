@@ -11,6 +11,9 @@ let requestSequence = 0;
 let startupFinished = false;
 let hasLoadedData = false;
 let startupFallback;
+let startupFinishTimer;
+const startupStartedAt = performance.now();
+const minimumStartupDuration = 2000;
 
 function animatePage(page) {
   if (reducedMotion || !page) return;
@@ -439,6 +442,16 @@ async function loadReferenceData() {
 
 function finishStartup() {
   if (startupFinished) return;
+  const remaining = minimumStartupDuration - (performance.now() - startupStartedAt);
+  if (remaining > 0) {
+    if (!startupFinishTimer) {
+      startupFinishTimer = window.setTimeout(() => {
+        startupFinishTimer = undefined;
+        finishStartup();
+      }, remaining);
+    }
+    return;
+  }
   startupFinished = true;
   window.clearTimeout(startupFallback);
   animatePage(pages.find((item) => !item.hidden));
