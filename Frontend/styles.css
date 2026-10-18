@@ -22,3 +22,28 @@
 /* Larger reading scale for high-resolution laptop and desktop screens. */
 @media(min-width:901px){.brand strong{font-size:18px}.brand small{font-size:10px}.nav-label{font-size:11px}.nav-link{min-height:52px;font-size:15px}.nav-link svg{width:21px;height:21px}.breadcrumb{font-size:14px}.sample-badge{font-size:10px}.eyebrow{font-size:12px}.page-heading h1{font-size:clamp(42px,3.3vw,56px)}.lede{font-size:17px}.date-select,.filter-button{min-height:48px;font-size:14px}.metric-card{min-height:150px;padding:20px}.metric-label{font-size:14px}.metric-card>strong{font-size:36px}.metric-card>strong small{font-size:16px}.metric-foot{font-size:12px}.panel-heading{padding:23px 24px 12px}.panel-heading h2,.compact-heading h2{font-size:21px}.panel-subtitle{font-size:14px}.segmented button{min-width:74px;min-height:42px;font-size:14px}.chart-legend{font-size:12px}.chart-wrap{height:250px}.y-labels,.x-labels{font-size:12px}.appliance-name strong,.alert-summary-row strong{font-size:13px}.appliance-name small,.appliance-value,.feed-meta{font-size:12px}.tip-panel h2,.rules-side-card h2{font-size:22px}.tip-panel>p,.alert-preferences>p,.rules-side-card>p:not(.eyebrow),.feed-content>p:not(.feed-detail),.rule-setting-copy>p,.rule-setting details p{font-size:14px}.preview-alert strong,.feed-content h2{font-size:17px}.preview-alert small,.feed-data span,.feed-expand,.rule-setting summary{font-size:12px}.rule-setting{padding:23px;gap:18px}.rule-setting-meta{font-size:12px}.rule-status{font-size:11px}.rule-setting h2{font-size:21px}.rules-intro strong{font-size:15px}.rules-intro p,.rules-disclaimer p,.data-note p,.page-footer{font-size:12px}.rules-side-card h2{font-size:24px}}
 @media(max-width:680px){.nav-link{font-size:12px}.metric-label{font-size:11px}.metric-foot{font-size:10px}.segmented button{min-height:46px;font-size:14px}.chart-legend{font-size:10px}.y-labels,.x-labels{font-size:10px}.rule-setting-meta{font-size:9px}.rule-status{font-size:8px}.rule-setting h2{font-size:15px}.rule-setting-copy>p,.rule-setting details p{font-size:12px}.rules-intro strong{font-size:12px}.rules-intro p,.rules-disclaimer p{font-size:11px}}
+/* Improve readability at standard 100% browser zoom on desktop displays. */
+@media(min-width:901px){
+  .main-content{padding-right:clamp(32px,3.5vw,68px);padding-left:clamp(32px,3.5vw,68px)}
+  .nav-label{font-size:12px}.nav-link{min-height:56px;font-size:16px}
+  .breadcrumb{font-size:15px}.sample-badge{font-size:11px}
+  .metric-label{font-size:15px}.metric-foot{font-size:13px}
+  .chart-legend{font-size:13px}.y-labels,.x-labels{font-size:13px}
+  .appliance-name strong,.appliance-value{font-size:14px}.appliance-name small{font-size:12px}
+  .tip-foot,.data-note p,.data-note strong,.page-footer{font-size:13px}
+  .insight-chart-panel .chart-wrap{height:290px}
+  .large-bars{height:300px}
+  .bar-group{font-size:13px}
+  .feed-content>p:not(.feed-detail),.rule-setting-copy>p,.rule-setting details p{font-size:15px}
+  .rule-setting h2,.feed-content h2{font-size:22px}
+}
+@media(max-width:680px){
+  .metric-label{font-size:12px}.metric-foot{font-size:11px}
+  .panel-heading h2,.compact-heading h2{font-size:17px}
+  .panel-subtitle{font-size:12px}.chart-legend{font-size:11px}
+  .y-labels,.x-labels{font-size:11px}
+  .insight-stats .metric-label{font-size:11px}.insight-stats .metric-foot{font-size:10px}
+  .large-bars{height:235px}.bar-group{font-size:11px}
+  .feed-content>p:not(.feed-detail){font-size:12px}.feed-content h2{font-size:15px}
+  .appliance-name strong{font-size:11px}.appliance-name small,.appliance-value{font-size:10px}
+}

@@ -22,6 +22,13 @@ function animatePage(page) {
   void page.offsetWidth;
   page.classList.add("is-entering");
   window.setTimeout(() => page.classList.remove("is-entering"), 1500);
+  // The chart animation starts from an inline dash offset. Persist its final
+  // visible state after the page entrance class (and its CSS animation) ends.
+  window.setTimeout(() => {
+    page.querySelectorAll(".chart-line").forEach((line) => {
+      line.style.strokeDashoffset = "0";
+    });
+  }, 1500);
 }
 
 function navigate(animate = true) {
