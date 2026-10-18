@@ -47,3 +47,43 @@
   .feed-content>p:not(.feed-detail){font-size:12px}.feed-content h2{font-size:15px}
   .appliance-name strong{font-size:11px}.appliance-name small,.appliance-value{font-size:10px}
 }
+/* App-wide accessibility pass: raise microcopy and make controls easier to hit. */
+@media(min-width:681px){
+  .account-row{gap:12px;padding-top:15px}.avatar{width:40px;height:40px;font-size:13px}
+  .account-row strong{font-size:14px}.account-row small{font-size:12px}
+  .icon-button{width:42px;height:42px}.icon-button svg{width:20px;height:20px}
+  .home-icon{width:38px;height:38px}.home-switcher small{font-size:10px}.home-switcher strong{font-size:13px}
+  .nav-count{font-size:11px;padding:4px 7px}
+  .date-select,.filter-button{min-height:48px;font-size:14px}
+  .segmented button{min-height:44px;padding:9px 14px;font-size:14px}
+  .quiet-link,.tip-foot,.sample-label,.chart-insight small,.mix-total span,.mix-list>div,
+  .insight-copy>p:not(.eyebrow),.feed-date,.alert-summary-row>div>span:last-child,.text-action,
+  .feed-meta,.feed-content>p:not(.feed-detail),.feed-data span,.feed-expand,.older-placeholder,
+  .rules-intro p,.rules-disclaimer p,.mini-rules-card>div>span,.mini-rules-card>div small,
+  .data-note p,.data-note strong{font-size:12px}
+  .mini-rules-card>div strong,.alert-summary-row strong,.rules-intro strong{font-size:14px}
+  .rule-setting-meta{font-size:12px}.rule-status{font-size:11px}
+  .rule-setting summary{min-height:40px;display:flex;align-items:center;font-size:13px}
+  .load-more-button{min-height:46px;font-size:13px}
+  .nav-link{min-height:56px}
+  .toggle{width:48px;height:28px}.toggle:before{width:22px;height:22px}
+  .toggle[aria-checked=true]:before{transform:translateX(20px)}
+}
+@media(max-width:680px){
+  .avatar{width:38px;height:38px;font-size:12px}
+  .account-row strong{font-size:13px}.account-row small{font-size:11px}
+  .icon-button{width:42px;height:42px}.home-switcher small{font-size:9px}.home-switcher strong{font-size:12px}
+  .nav-count{font-size:10px}
+  .quiet-link,.tip-foot,.sample-label,.chart-insight small,.mix-total span,.mix-list>div,
+  .insight-copy>p:not(.eyebrow),.feed-date,.alert-summary-row>div>span:last-child,.text-action,
+  .feed-meta,.feed-content>p:not(.feed-detail),.feed-data span,.feed-expand,.older-placeholder,
+  .rules-intro p,.rules-disclaimer p,.mini-rules-card>div>span,.mini-rules-card>div small,
+  .data-note p,.data-note strong{font-size:11px}
+  .mini-rules-card>div strong,.alert-summary-row strong,.rules-intro strong{font-size:12px}
+  .rule-setting-meta{font-size:10px}.rule-status{font-size:9px}
+  .rule-setting summary{min-height:42px;display:flex;align-items:center;font-size:12px}
+  .load-more-button{min-height:46px;font-size:12px}
+  .date-select,.filter-button{min-height:44px;font-size:13px}
+  .toggle{width:44px;height:26px}.toggle:before{width:20px;height:20px}
+  .toggle[aria-checked=true]:before{transform:translateX(18px)}
+}
