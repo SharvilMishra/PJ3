@@ -21,6 +21,14 @@ The files include home and time identifiers, occupancy, humidity, outdoor and in
 - Check missing values, duplicate timestamps, units, and arithmetic consistency (`total_usage_kwh` and `cost_usd`) before using the data for savings estimates.
 - Define rules using the training file only; use the 30 test rows for evaluation rather than threshold tuning.
 
+## Application coverage
+
+- The overview and insights use timestamp, total usage, cost, tariff rate, tariff period, and all four HVAC/appliance usage fields. They calculate period totals, daily trends, peak readings, appliance shares, and reference-rule alerts.
+- Hover over or keyboard-focus the overview energy graph to inspect a day. The reading card includes daily energy and cost, hourly reading count, occupancy share, humidity, indoor/outdoor temperatures, heat/cool setpoints, the most common HVAC mode and tariff period, average tariff rate, appliance totals, and the matching day in the previous period.
+- `home_id` is retained in alert identifiers. The supplied files contain one home, so the interface does not present a home comparison or selector.
+- Training data drives the displayed history and alerts. The sparse test file is used only by `/api/evaluation` for reference-rule counts and diagnostics; its `date` and `hour` columns are checked against canonical `timestamp` and are not substituted into the charts.
+- The UI presents historical sample data, not live device readings. The three supplied example rules use dishwasher load, tariff period, timestamp, HVAC mode, and indoor/outdoor temperatures. `occupied`, humidity, and setpoints are descriptive context in the graph reading card, not alert conditions.
+
 ## Rules shown in the supplied HTML example
 
 1. **Appliance Peak Shift:** suggest moving dishwasher use out of a Peak tariff period.

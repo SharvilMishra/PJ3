@@ -224,6 +224,106 @@ function renderLineChart(daily, previous, period, days) {
       line.style.strokeDashoffset = `${length}px`;
     } catch { /* The static chart still works when SVG measurement is unavailable. */ }
   });
+  const namespace = "http://www.w3.org/2000/svg";
+  let guide = svg.querySelector(".chart-focus-guide");
+  if (!guide) {
+    guide = document.createElementNS(namespace, "line");
+    guide.setAttribute("class", "chart-focus-guide");
+    guide.setAttribute("y1", "15");
+    guide.setAttribute("y2", "195");
+    guide.setAttribute("aria-hidden", "true");
+    svg.append(guide);
+  }
+  let focusCurrent = svg.querySelector(".chart-focus-current");
+  if (!focusCurrent) {
+    focusCurrent = document.createElementNS(namespace, "circle");
+    focusCurrent.setAttribute("class", "chart-focus-dot chart-focus-current");
+    focusCurrent.setAttribute("r", "5");
+    svg.append(focusCurrent);
+  }
+  let focusPrevious = svg.querySelector(".chart-focus-previous");
+  if (!focusPrevious) {
+    focusPrevious = document.createElementNS(namespace, "circle");
+    focusPrevious.setAttribute("class", "chart-focus-dot chart-focus-previous");
+    focusPrevious.setAttribute("r", "5");
+    svg.append(focusPrevious);
+  }
+  const chartWrap = svg.closest(".chart-wrap");
+  let tooltip = chartWrap.querySelector(".chart-reading-tooltip");
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.className = "chart-reading-tooltip";
+    tooltip.id = "chart-reading-tooltip";
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.hidden = true;
+    chartWrap.append(tooltip);
+    svg.setAttribute("aria-describedby", tooltip.id);
+    svg.setAttribute("tabindex", "0");
+  }
+  let activeIndex = Math.max(0, current.length - 1);
+  const showReading = (index, clientX, clientY) => {
+    if (!current.length) return;
+    activeIndex = Math.max(0, Math.min(current.length - 1, index));
+    const currentPoint = currentPoints[activeIndex];
+    const previousPoint = previousPoints[activeIndex];
+    const reading = current[activeIndex];
+    const previousReading = past[activeIndex];
+    guide.setAttribute("x1", currentPoint.x);
+    guide.setAttribute("x2", currentPoint.x);
+    focusCurrent.setAttribute("cx", currentPoint.x);
+    focusCurrent.setAttribute("cy", currentPoint.y);
+    focusPrevious.setAttribute("cx", previousPoint.x);
+    focusPrevious.setAttribute("cy", previousPoint.y);
+    guide.classList.add("is-visible");
+    focusCurrent.classList.add("is-visible");
+    focusPrevious.classList.add("is-visible");
+    const dateLabel = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
+      .format(new Date(`${reading.date}T12:00:00Z`));
+    const applianceLabels = [
+      ["Climate", "climate_control"], ["Dishwasher", "dishwasher"],
+      ["Washer / dryer", "washer_dryer"], ["Robot vacuum", "robot_vacuum"],
+    ];
+    const loads = applianceLabels.map(([label, key]) => `${label} ${formatNumber(reading.appliance_kwh?.[key], 2)} kWh`).join(" · ");
+    tooltip.innerHTML = `<strong>${escapeText(dateLabel)}</strong>
+      <span class="chart-tooltip-total">${formatNumber(reading.kwh, 2)} kWh <i>·</i> ${formatCurrency(reading.cost_usd)}</span>
+      <span><b>Previous period</b> ${formatNumber(previousReading?.kwh, 2)} kWh</span>
+      <span><b>Occupied</b> ${formatNumber(reading.occupied_percent, 0)}% <i>·</i> <b>Humidity</b> ${formatNumber(reading.humidity_percent, 0)}%</span>
+      <span><b>Indoor</b> ${formatNumber(reading.indoor_temp_c, 1)}°C <i>·</i> <b>Outdoor</b> ${formatNumber(reading.outdoor_temp_c, 1)}°C</span>
+      <span><b>HVAC</b> ${escapeText(reading.hvac_mode)} <i>·</i> heat ${formatNumber(reading.heat_set_c, 1)}°C / cool ${formatNumber(reading.cool_set_c, 1)}°C</span>
+      <span><b>${escapeText(reading.tariff_period)}</b> avg. ${formatCurrency(reading.average_rate_usd_per_kwh)}/kWh</span>
+      <small>${loads} · ${reading.readings} hourly readings</small>`;
+    tooltip.hidden = false;
+    const wrapRect = chartWrap.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const pointerLeft = Number.isFinite(clientX) ? clientX - wrapRect.left + 14 : (currentPoint.x / 700) * svgRect.width + svgRect.left - wrapRect.left + 14;
+    const pointerTop = Number.isFinite(clientY) ? clientY - wrapRect.top : currentPoint.y / 220 * svgRect.height + svgRect.top - wrapRect.top;
+    const left = Math.max(8, Math.min(pointerLeft, chartWrap.clientWidth - tooltip.offsetWidth - 8));
+    const top = Math.max(8, Math.min(pointerTop - tooltip.offsetHeight - 14, chartWrap.clientHeight - tooltip.offsetHeight - 8));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    svg.setAttribute("aria-label", `${dateLabel}: ${formatNumber(reading.kwh, 2)} kilowatt-hours, ${formatCurrency(reading.cost_usd)}. Use arrow keys to explore days.`);
+  };
+  const hideReading = () => {
+    tooltip.hidden = true;
+    guide.classList.remove("is-visible");
+    focusCurrent.classList.remove("is-visible");
+    focusPrevious.classList.remove("is-visible");
+  };
+  svg.onpointermove = (event) => {
+    if (!current.length) return;
+    const bounds = svg.getBoundingClientRect();
+    const svgX = ((event.clientX - bounds.left) / bounds.width) * 700;
+    showReading(Math.round(Math.max(0, Math.min(1, (svgX - 12) / 676)) * (current.length - 1)), event.clientX, event.clientY);
+  };
+  svg.onpointerleave = hideReading;
+  svg.onfocus = () => showReading(activeIndex);
+  svg.onblur = hideReading;
+  svg.onkeydown = (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? 0 : event.key === "End" ? current.length - 1 : activeIndex + (event.key === "ArrowRight" ? 1 : -1);
+    showReading(next);
+  };
   document.querySelectorAll("[data-axis]").forEach((label) => {
     const fraction = Number(label.dataset.axis) / 3;
     label.textContent = formatNumber(max * fraction, 0);

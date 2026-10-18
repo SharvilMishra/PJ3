@@ -24,7 +24,7 @@ DATASETS = {
 FRONTEND = ROOT / "Frontend"
 REQUIRED_FIELDS = {
     "home_id", "timestamp", "occupied", "humidity", "outdoor_temp_c",
-    "indoor_temp_c", "hvac_mode", "hvac_usage_kwh",
+    "indoor_temp_c", "hvac_mode", "heat_set_c", "cool_set_c", "hvac_usage_kwh",
     "robot_vacuum_usage_kwh", "washer_dryer_usage_kwh",
     "dishwasher_usage_kwh", "total_usage_kwh", "price_tou_usd_per_kwh",
     "tariff_period", "cost_usd",
@@ -110,6 +110,7 @@ def _parse_record(source: dict[str, str], dataset: str, line: int) -> dict[str, 
         record["timestamp_dt"] = timestamp
         for key in (
             "occupied", "humidity", "outdoor_temp_c", "indoor_temp_c",
+            "heat_set_c", "cool_set_c",
             "hvac_usage_kwh", "robot_vacuum_usage_kwh", "washer_dryer_usage_kwh",
             "dishwasher_usage_kwh", "total_usage_kwh", "price_tou_usd_per_kwh", "cost_usd",
         ):
@@ -211,14 +212,47 @@ def _enabled_rules(value: str | None) -> set[str] | None:
 
 
 def _daily_totals(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[date, dict[str, float]] = defaultdict(lambda: {"kwh": 0.0, "cost_usd": 0.0, "readings": 0})
+    grouped: dict[date, dict[str, Any]] = defaultdict(lambda: {
+        "kwh": 0.0, "cost_usd": 0.0, "readings": 0, "occupied": 0.0,
+        "humidity": 0.0, "outdoor_temp_c": 0.0, "indoor_temp_c": 0.0,
+        "heat_set_c": 0.0, "cool_set_c": 0.0, "price": 0.0,
+        "appliance_kwh": {key: 0.0 for key, _, _ in APPLIANCES},
+        "hvac_modes": Counter(), "tariff_periods": Counter(),
+    })
     for row in rows:
         day = row["timestamp_dt"].date()
-        grouped[day]["kwh"] += row["total_usage_kwh"]
-        grouped[day]["cost_usd"] += row["cost_usd"]
-        grouped[day]["readings"] += 1
+        summary = grouped[day]
+        summary["kwh"] += row["total_usage_kwh"]
+        summary["cost_usd"] += row["cost_usd"]
+        summary["readings"] += 1
+        for target, field in (
+            ("occupied", "occupied"), ("humidity", "humidity"),
+            ("outdoor_temp_c", "outdoor_temp_c"), ("indoor_temp_c", "indoor_temp_c"),
+            ("heat_set_c", "heat_set_c"), ("cool_set_c", "cool_set_c"),
+            ("price", "price_tou_usd_per_kwh"),
+        ):
+            summary[target] += row[field]
+        for key, _, field in APPLIANCES:
+            summary["appliance_kwh"][key] += row[field]
+        summary["hvac_modes"][str(row["hvac_mode"]).strip().lower()] += 1
+        summary["tariff_periods"][str(row["tariff_period"]).strip()] += 1
     return [
-        {"date": day.isoformat(), "kwh": round(values["kwh"], 3), "cost_usd": round(values["cost_usd"], 3), "readings": int(values["readings"])}
+        {
+            "date": day.isoformat(),
+            "kwh": round(values["kwh"], 3),
+            "cost_usd": round(values["cost_usd"], 3),
+            "readings": int(values["readings"]),
+            "occupied_percent": round(values["occupied"] / values["readings"] * 100, 1),
+            "humidity_percent": round(values["humidity"] / values["readings"], 1),
+            "outdoor_temp_c": round(values["outdoor_temp_c"] / values["readings"], 1),
+            "indoor_temp_c": round(values["indoor_temp_c"] / values["readings"], 1),
+            "heat_set_c": round(values["heat_set_c"] / values["readings"], 1),
+            "cool_set_c": round(values["cool_set_c"] / values["readings"], 1),
+            "average_rate_usd_per_kwh": round(values["price"] / values["readings"], 4),
+            "hvac_mode": values["hvac_modes"].most_common(1)[0][0],
+            "tariff_period": values["tariff_periods"].most_common(1)[0][0],
+            "appliance_kwh": {key: round(amount, 3) for key, amount in values["appliance_kwh"].items()},
+        }
         for day, values in sorted(grouped.items())
     ]
 

@@ -87,3 +87,23 @@
   .toggle{width:44px;height:26px}.toggle:before{width:20px;height:20px}
   .toggle[aria-checked=true]:before{transform:translateX(18px)}
 }
+.chart-wrap{position:relative}
+.usage-chart{cursor:crosshair;touch-action:pan-y}
+.usage-chart:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:8px}
+.chart-focus-guide{stroke:#eff1fa78;stroke-width:1;stroke-dasharray:3 5;opacity:0;pointer-events:none;transition:opacity .12s ease}
+.chart-focus-guide.is-visible{opacity:1}
+.chart-focus-dot{opacity:0;stroke:#10131a;stroke-width:2.5;pointer-events:none;transition:cx .12s ease,cy .12s ease,opacity .12s ease}
+.chart-focus-current{fill:var(--blue)}.chart-focus-previous{fill:var(--purple)}
+.chart-focus-dot.is-visible{opacity:1}
+.chart-reading-tooltip{position:absolute;z-index:4;width:min(350px,calc(100vw - 36px));display:grid;gap:5px;padding:13px 15px;border:1px solid #91bdff4d;border-radius:13px;color:#dce5f6;background:linear-gradient(145deg,#171d2af5,#0d111bf7);box-shadow:0 14px 42px #0009,0 0 24px #6ea8ff18;backdrop-filter:blur(16px);font-size:12px;line-height:1.4;pointer-events:none;animation:tooltip-arrive .16s ease both}
+.chart-reading-tooltip[hidden]{display:none}
+.chart-reading-tooltip>strong{color:#f5f7ff;font-size:14px;font-weight:700}
+.chart-reading-tooltip .chart-tooltip-total{color:#8ec8ff;font-size:16px;font-weight:750}
+.chart-reading-tooltip .chart-tooltip-total i{color:#8d96aa;font-style:normal}
+.chart-reading-tooltip span{color:#bdc6d8}
+.chart-reading-tooltip span b{color:#909cb3;font-weight:550}
+.chart-reading-tooltip span i{color:#66738b;font-style:normal}
+.chart-reading-tooltip>small{padding-top:5px;border-top:1px solid #ffffff12;color:#98a4bb;font-size:11px;line-height:1.5}
+@keyframes tooltip-arrive{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:680px){.chart-reading-tooltip{width:min(310px,calc(100vw - 46px));padding:11px 12px;font-size:11px}.chart-reading-tooltip>strong{font-size:13px}.chart-reading-tooltip .chart-tooltip-total{font-size:15px}.chart-reading-tooltip>small{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.chart-focus-guide,.chart-focus-dot{transition:none}.chart-reading-tooltip{animation:none}}
