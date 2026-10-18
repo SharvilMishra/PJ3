@@ -9,11 +9,17 @@ Install Python 3.10 or newer if it is not already installed. From the project ro
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r Backend\requirements.txt
+python -m pip install -r requirements.txt
 python -m uvicorn Backend.app:app --reload
 ```
 
 Open `http://127.0.0.1:8000` for the app and `http://127.0.0.1:8000/api/docs` for the interactive API reference. The process must run from the project root so the relative project layout and source CSVs remain available.
+
+## Deploy the app to Vercel
+
+Import the repository into Vercel with the project root set to the repository root (do not set it to `Frontend/`). Vercel detects FastAPI from `requirements.txt`; `pyproject.toml` points it at the app, `vercel.json` includes both CSV datasets in the function bundle, and the FastAPI static mounts serve the frontend and logo assets. Deploy the project, then open `/api/health` on its Vercel URL to confirm that both datasets loaded.
+
+The intended deployment serves the frontend and API from the same Vercel project, so leave `window.ENERGY_API_BASE` empty in `Frontend/index.html`; the frontend will use same-origin `/api/...` routes. If you keep the frontend on GitHub Pages instead, set that value to the Vercel URL and retain the Pages origin in `FRONTEND_ORIGINS` for CORS.
 
 ## API
 

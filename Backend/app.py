@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import math
+import os
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 from functools import lru_cache
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 
@@ -62,6 +64,21 @@ RULES = (
 )
 
 app = FastAPI(title="Energy Advisor API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_ORIGINS",
+        "http://127.0.0.1:8000,http://localhost:8000,https://sharvilmishra.github.io",
+    ).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["Accept"],
+)
 
 
 def _number(value: str | float | int | None, field: str) -> float:

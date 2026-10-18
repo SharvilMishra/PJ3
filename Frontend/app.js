@@ -4,6 +4,7 @@ const currentSection = document.querySelector("#current-section");
 const startupLoader = document.querySelector("#startup-loader");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const statusText = document.querySelector("#backend-status-text");
+const apiBase = (window.ENERGY_API_BASE || "").trim().replace(/\/+$/, "");
 let selectedDays = 30;
 let alertOffset = 0;
 let alertTotal = 0;
@@ -53,7 +54,11 @@ function requestUrl(path, includeRules = true) {
 }
 
 async function getJson(path) {
-  const response = await fetch(path, { headers: { Accept: "application/json" } });
+  if (!apiBase && window.location.hostname.endsWith(".github.io")) {
+    throw new Error("GitHub Pages only hosts the frontend. Deploy the API, then set ENERGY_API_BASE in Frontend/index.html.");
+  }
+  const target = apiBase ? new URL(path, `${apiBase}/`).toString() : path;
+  const response = await fetch(target, { headers: { Accept: "application/json" } });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.detail || `Request failed (${response.status})`);
@@ -122,13 +127,10 @@ function setMetric(key, value, unit = "") {
 
 function syncPeriodControls() {
   document.querySelectorAll("[data-period]").forEach((select) => { select.value = String(selectedDays); });
-  document.querySelectorAll(".segmented").forEach((group) => {
-    group.querySelectorAll("button").forEach((button) => {
-      const active = (button.textContent.trim() === "Week" && selectedDays === 7)
-        || (button.textContent.trim() === "Month" && selectedDays === 30);
-      button.classList.toggle("selected", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
+  document.querySelectorAll("[data-chart-days]").forEach((button) => {
+    const active = Number(button.dataset.chartDays) === selectedDays;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", String(active));
   });
 }
 
@@ -149,7 +151,7 @@ function renderOverview(data) {
   const lowest = daily.reduce((result, item) => !result || item.kwh < result.kwh ? item : result, null);
   setMetric("lowest-day", lowest ? formatNumber(lowest.kwh, 2) : "—", "kWh");
   setMetric("lowest-date", lowest ? formatTimestamp(`${lowest.date}T12:00:00`, { weekday: "long", month: "short", day: "numeric" }) : "—");
-  renderLineChart(daily, previous);
+  renderLineChart(daily, previous, period, data.period_days);
   renderBars(daily, previous);
   renderApplianceMix(data.appliance_mix);
   renderLatestAlert(data.latest_alert);
@@ -168,13 +170,30 @@ function weekdayAverages(daily) {
   }));
 }
 
-function renderLineChart(daily, previous) {
+function shiftIsoDate(value, offset) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
+function completeDailySeries(rows, start, end) {
+  const values = new Map(rows.map((item) => [item.date, item.kwh]));
+  const series = [];
+  for (let date = start; date <= end; date = shiftIsoDate(date, 1)) {
+    series.push({ date, kwh: values.get(date) || 0 });
+  }
+  return series;
+}
+
+function renderLineChart(daily, previous, period, days) {
   const svg = document.querySelector(".usage-chart");
-  const current = weekdayAverages(daily);
-  const past = weekdayAverages(previous);
+  const current = completeDailySeries(daily, period.start, period.end);
+  const previousEnd = shiftIsoDate(period.start, -1);
+  const previousStart = shiftIsoDate(period.start, -days);
+  const past = completeDailySeries(previous, previousStart, previousEnd);
   const max = Math.max(1, ...current.map((item) => item.kwh), ...past.map((item) => item.kwh));
   const pointsFor = (items) => items.map((item, index) => ({
-    x: items.length < 2 ? 350 : (index / (items.length - 1)) * 700,
+    x: items.length < 2 ? 350 : 12 + (index / (items.length - 1)) * 676,
     y: 195 - (item.kwh / max) * 180,
   }));
   const pathFor = (points) => points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
@@ -203,9 +222,14 @@ function renderLineChart(daily, previous) {
     label.textContent = formatNumber(max * fraction, 0);
   });
   const labels = document.querySelector("[data-chart-labels]");
-  labels.replaceChildren(...current.map((item) => {
+  const labelCount = Math.min(7, current.length);
+  const labelIndexes = Array.from({ length: labelCount }, (_, index) =>
+    Math.round(index * (current.length - 1) / Math.max(1, labelCount - 1)));
+  labels.replaceChildren(...labelIndexes.map((index) => {
+    const item = current[index];
     const day = document.createElement("span");
-    day.textContent = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][item.weekday];
+    day.textContent = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" })
+      .format(new Date(`${item.date}T12:00:00Z`));
     return day;
   }));
 }
@@ -471,7 +495,7 @@ document.querySelectorAll("[data-period]").forEach((select) => {
 document.querySelectorAll(".segmented").forEach((group) => {
   group.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
-      selectedDays = button.textContent.trim() === "Week" ? 7 : 30;
+      selectedDays = Number(button.dataset.chartDays);
       syncPeriodControls();
       refreshPeriod();
     });
