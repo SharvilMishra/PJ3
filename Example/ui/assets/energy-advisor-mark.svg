@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="mark-title mark-desc">
+  <title id="mark-title">Energy Advisor mark</title>
+  <desc id="mark-desc">A custom home outline enclosing a flowing energy current in neon blue and violet.</desc>
+  <defs>
+    <linearGradient id="current" x1="18" y1="17" x2="84" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#62D4FF"/><stop offset=".52" stop-color="#668CFF"/><stop offset="1" stop-color="#C18BFF"/></linearGradient>
+    <linearGradient id="core" x1="39" y1="42" x2="66" y2="75" gradientUnits="userSpaceOnUse"><stop stop-color="#A9E9FF"/><stop offset="1" stop-color="#D4B0FF"/></linearGradient>
+    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect x="1" y="1" width="98" height="98" rx="29" fill="#171A22" stroke="#343844" stroke-width="1.5"/>
+  <path d="M19 49.5 47.2 26.7a4.5 4.5 0 0 1 5.6 0L81 49.5" fill="none" stroke="url(#current)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M26 47.5v27a6 6 0 0 0 6 6h36a6 6 0 0 0 6-6v-27" fill="none" stroke="#7A83A0" stroke-opacity=".84" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M61.8 41.5c-12.6 1.2-23.4 7.5-26.3 17.3-2.4 8.2 2.7 15.3 10 16.2 1.6-10.9 6.4-19.5 17.1-26.7" fill="none" stroke="url(#current)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m53.2 42.8-13 17.7h11l-4.7 12.1 17.6-21.4H53.2l4.4-8.4Z" fill="url(#core)" stroke="#D8F3FF" stroke-opacity=".7" stroke-width=".8" stroke-linejoin="round" filter="url(#soft-glow)"/>
+  <circle cx="77.8" cy="28.6" r="2.5" fill="#A98DFF"/>
+</svg>

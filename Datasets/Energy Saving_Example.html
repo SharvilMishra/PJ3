@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy-Saving Alert Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1d4ed8; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; transition: all 0.3s ease; }
+        
+        .dot { transition: all 0.3s ease-in-out; }
+        input:checked ~ .dot { transform: translateX(100%); background-color: #3b82f6; }
+        input:checked ~ .block { background-color: #bfdbfe; }
+
+        .accordion-content { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .accordion-content.open { max-height: 3000px; }
+
+        .archive-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .archive-detail.open { max-height: 600px; }
+
+        .rotate-icon { transition: transform 0.3s ease; }
+        .rotate-icon.open { transform: rotate(180deg); }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'rule1-primary': '#DC2626',
+                        'rule1-light': '#FEE2E2',
+                        'rule2-primary': '#F59E0B',
+                        'rule2-light': '#FEF3C7',
+                        'rule3-primary': '#06B6D4',
+                        'rule3-light': '#CCFBF1',
+                    }
+                }
+            }
+        }
+
+        let currentPage = 'dashboard'; 
+        let isHistoryOpen = false; 
+        let openArchiveId = null; 
+        let ruleStates = { 1: true, 2: true, 3: true };
+
+        // Data synchronized with the provided sic_IoT_test_dataset_251231.csv
+        const alertsData = [
+            {
+                id: "R1-1",
+                timestamp: "2026-08-02 20:00",
+                tariff_period: "Peak",
+                hvac_mode: "cool",
+                outdoor_temp_c: 28.4,
+                indoor_temp_c: 22.1,
+                cool_setpoint: "22.0°C",
+                heat_setpoint: "20.0°C",
+                usage_kwh: "4.00",
+                triggered_rule: 1,
+                alert_message: "It's a peak time right now. Shall I schedule the cycle of the appliance for tomorrow morning?",
+                energy_tip: "You're using the dishwasher during the most expensive part of the day. To maximize efficiency, schedule your appliance cycles for the off-peak hours."
+            },
+            {
+                id: "R1-2",
+                timestamp: "2026-07-19 17:00",
+                tariff_period: "Peak",
+                hvac_mode: "cool",
+                outdoor_temp_c: 30.2,
+                indoor_temp_c: 22.3,
+                cool_setpoint: "22.0°C",
+                heat_setpoint: "20.0°C",
+                usage_kwh: "3.92",
+                triggered_rule: 1,
+                alert_message: "It's a peak time right now. Shall I schedule the cycle of the appliance for tomorrow morning?",
+                energy_tip: "High energy demand right now means higher prices for your appliances. Try to hold off on starting the next load until the sun goes down to optimize your budget."
+            },
+            {
+                id: "R1-3",
+                timestamp: "2026-07-09 22:00",
+                tariff_period: "Peak",
+                hvac_mode: "cool",
+                outdoor_temp_c: 24.8,
+                indoor_temp_c: 26.5,
+                cool_setpoint: "24.0°C",
+                heat_setpoint: "20.0°C",
+                usage_kwh: "1.79",
+                triggered_rule: 3,
+                alert_message: "It's cooler outside than indoors — consider opening your windows to save energy.",
+                energy_tip: "Nature is providing 'free cooling' tonight with lower outdoor temperatures. Give your air conditioner a break and let the fresh night air lower your indoor temperature."
+            },
+            {
+                id: "R1-4",
+                timestamp: "2025-06-26 18:00",
+                tariff_period: "Peak",
+                hvac_mode: "cool",
+                outdoor_temp_c: 25.6,
+                indoor_temp_c: 27.8,
+                cool_setpoint: "24.0°C",
+                heat_setpoint: "20.0°C",
+                usage_kwh: "3.16",
+                triggered_rule: 3,
+                alert_message: "It's cooler outside than indoors — consider opening your windows to save energy.",
+                energy_tip: "The evening breeze is actually cooler than your living room, so feel free to turn off the AC. Simply opening a few windows will refresh your home naturally."
+            },
+            {
+                id: "R1-5",
+                timestamp: "2026-04-26 19:00",
+                tariff_period: "Peak",
+                hvac_mode: "off",
+                outdoor_temp_c: 21.5,
+                indoor_temp_c: 18.0,
+                cool_setpoint: "25.0°C",
+                heat_setpoint: "20.0°C",
+                usage_kwh: "1.36",
+                triggered_rule: 1,
+                alert_message: "It's a peak time right now. Shall I schedule the cycle of the appliance for tomorrow morning?",
+                energy_tip: "Your dishwasher is running during a high-tariff period. Switching this chore to an off-peak window will help you save on every wash."
+            },
+            {
+                id: "R1-6",
+                timestamp: "2026-03-24 21:00",
+                tariff_period: "Peak",
+                hvac_mode: "heat",
+                outdoor_temp_c: 16.8,
+                indoor_temp_c: 21.7,
+                cool_setpoint: "25.0°C",
+                heat_setpoint: "21.0°C",
+                usage_kwh: "2.70",
+                triggered_rule: 1,
+                alert_message: "It's a peak time right now. Shall I schedule the cycle of the appliance for tomorrow morning?",
+                energy_tip: "Electricity rates are at their highest tonight, so why not wait to run the dishwasher? Setting a delay timer for the early morning is an effortless way to cut costs."
+            },
+            {
+                id: "R1-7",
+                timestamp: "2026-03-21 01:00",
+                tariff_period: "Off-Peak",
+                hvac_mode: "heat",
+                outdoor_temp_c: 11.2,
+                indoor_temp_c: 21.7,
+                cool_setpoint: "25.0°C",
+                heat_setpoint: "21.0°C",
+                usage_kwh: "2.51",
+                triggered_rule: 2,
+                alert_message: "To save energy, shall I adjust your heating setpoint?",
+                energy_tip: "The mild air outside means your heater doesn't need to work so hard right now. Consider lowering your setpoint to keep the house cozy without overspending."
+            },
+            {
+                id: "R1-8",
+                timestamp: "2026-02-16 20:00",
+                tariff_period: "Peak",
+                hvac_mode: "heat",
+                outdoor_temp_c: 3.0,
+                indoor_temp_c: 22.3,
+                cool_setpoint: "25.0°C",
+                heat_setpoint: "22.0°C",
+                usage_kwh: "3.87",
+                triggered_rule: 1,
+                alert_message: "It's a peak time right now. Shall I schedule the cycle of the appliance for tomorrow morning?",
+                energy_tip: "Since it's currently peak hours, try delaying your dishwasher cycle until after midnight. You'll enjoy clean dishes while lowering your electricity bill."
+            }
+        ];
+
+        function getRuleDetails(ruleId) {
+            const rules = {
+                1: { name: "Appliance Peak Shift", color: "rule1-primary", lightColor: "rule1-light", icon: "🕒", logic: "Alerts when Dishwasher runs during Peak hours." },
+                2: { name: "Night Heating Reduction", color: "rule2-primary", lightColor: "rule2-light", icon: "🌙", logic: "Suggests lowering heat (00:00-05:00) if outdoor > 10°C." },
+                3: { name: "Mild-Weather Free Cooling", color: "rule3-primary", lightColor: "rule3-light", icon: "🍃", logic: "Suggests windows if outdoor temp ≤ indoor temp while cooling." }
+            };
+            return rules[ruleId] || { name: "Unknown", color: "gray-500", lightColor: "gray-100", icon: "❓", logic: "" };
+        }
+
+        function navigateTo(page) { currentPage = page; render(); }
+        function toggleRule(ruleId) { ruleStates[ruleId] = !ruleStates[ruleId]; render(); }
+        function toggleHistory() { isHistoryOpen = !isHistoryOpen; render(); }
+        function toggleArchiveItem(id) { openArchiveId = (openArchiveId === id) ? null : id; render(); }
+
+        function generateCardMetrics(alert, details, isSmall = false) {
+            let metricLabel = "Total Load";
+            let metricValue = alert.usage_kwh + " kWh";
+            let fourthLabel = "HVAC Mode";
+            let fourthValue = alert.hvac_mode;
+
+            if(alert.triggered_rule === 1) { 
+                fourthLabel = "Dishwasher"; 
+                fourthValue = "Running"; 
+            }
+            if(alert.triggered_rule === 2) { 
+                metricLabel = "Heat Set"; 
+                metricValue = alert.heat_setpoint; 
+            }
+            if(alert.triggered_rule === 3) { 
+                metricLabel = "Cool Set"; 
+                metricValue = alert.cool_setpoint; 
+            }
+
+            return `
+                <div class="grid grid-cols-2 gap-2 text-gray-700 mb-4 ${isSmall ? 'text-[10px]' : 'text-sm'}">
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                        <span class="font-bold text-[9px] text-gray-400 block uppercase mb-1">Tariff Period</span>
+                        <span class="font-extrabold" style="color: ${alert.tariff_period === 'Peak' ? '#DC2626' : '#10B981'};">${alert.tariff_period}</span>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                        <span class="font-bold text-[9px] text-gray-400 block uppercase mb-1">Temp (In/Out)</span>
+                        <span class="font-semibold text-gray-800">${alert.indoor_temp_c}° / ${alert.outdoor_temp_c}°</span>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                        <span class="font-bold text-[9px] text-gray-400 block uppercase mb-1">${metricLabel}</span>
+                        <span class="font-semibold text-gray-800">${metricValue}</span>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+                        <span class="font-bold text-[9px] text-gray-400 block uppercase mb-1">${fourthLabel}</span>
+                        <span class="font-semibold capitalize text-gray-800">${fourthValue}</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded-lg shadow-inner" style="background-color: ${details.lightColor}80; border: 1px solid ${details.color}30;">
+                    <p class="font-bold mb-1 text-[11px]" style="color: ${details.color};">🚨 Alert Message:</p>
+                    <p class="${isSmall ? 'text-xs' : 'text-sm'} text-gray-800 mb-2 font-medium leading-tight">${alert.alert_message}</p>
+                    <hr class="my-2 border-dashed" style="border-color: ${details.color}30;">
+                    <p class="font-bold mb-1 text-[10px] text-gray-500 uppercase tracking-tighter">💡 Energy-Saving Tip:</p>
+                    <p class="${isSmall ? 'text-[10px]' : 'text-xs'} italic text-gray-600 leading-relaxed font-medium">${alert.energy_tip}</p>
+                </div>
+            `;
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('main-content');
+            const filteredAlerts = alertsData.filter(a => ruleStates[a.triggered_rule]);
+            
+            let content = `
+                <div class="flex justify-between items-center mb-6 px-1">
+                    <h2 class="text-xl font-bold text-gray-700">Latest Alert</h2>
+                    <button onclick="navigateTo('settings')" class="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition shadow-md text-sm font-bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1-1-1.73l-.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Settings
+                    </button>
+                </div>
+            `;
+
+            if (filteredAlerts.length === 0) {
+                content += `<div class="bg-white p-10 rounded-xl shadow text-center text-gray-500 text-sm">No active rules to display.</div>`;
+            } else {
+                const latest = filteredAlerts[0]; 
+                const details = getRuleDetails(latest.triggered_rule);
+                const [date, time] = latest.timestamp.split(' ');
+
+                content += `
+                    <div class="bg-white rounded-xl shadow-xl border-l-[6px] p-5 mb-8" style="border-left-color: ${details.color};">
+                        <div class="flex justify-between items-start border-b pb-3 mb-4 border-gray-100">
+                            <h2 class="text-base font-extrabold flex items-center text-gray-800">
+                                <span class="mr-2 text-xl" style="color: ${details.color};">🔔</span> 
+                                <span class="font-extrabold tracking-tight">${date}</span> 
+                                <span class="ml-2 font-extrabold text-gray-800 tracking-tight">${time}</span>
+                            </h2>
+                            <div class="text-xl">${details.icon}</div>
+                        </div>
+                        ${generateCardMetrics(latest, details)}
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-6">
+                        <button onclick="toggleHistory()" class="w-full flex justify-between items-center p-4 hover:bg-gray-50 transition border-b border-gray-100">
+                            <div class="flex items-center gap-2 text-gray-600 font-bold text-xs uppercase tracking-wider">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                                Archived Alerts (${filteredAlerts.length - 1})
+                            </div>
+                            <svg class="rotate-icon ${isHistoryOpen ? 'open' : ''} text-gray-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        
+                        <div class="accordion-content ${isHistoryOpen ? 'open' : ''}">
+                            <div class="divide-y divide-gray-100 bg-gray-50/20">
+                                ${filteredAlerts.slice(1).map(h => {
+                                    const hDetails = getRuleDetails(h.triggered_rule);
+                                    const isItemOpen = openArchiveId === h.id;
+                                    return `
+                                        <div class="transition-all duration-300">
+                                            <button onclick="toggleArchiveItem('${h.id}')" class="w-full p-4 flex items-center justify-between hover:bg-white transition">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-xl">${hDetails.icon}</span>
+                                                    <div class="text-left">
+                                                        <p class="text-[11px] font-bold text-gray-700">${hDetails.name}</p>
+                                                        <p class="text-[10px] text-gray-800 font-extrabold tracking-tight">${h.timestamp}</p>
+                                                    </div>
+                                                </div>
+                                                <svg class="rotate-icon ${isItemOpen ? 'open' : ''} text-gray-300" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                            </button>
+                                            <div class="archive-detail ${isItemOpen ? 'open' : ''}">
+                                                <div class="px-4 pb-4 pt-0">
+                                                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+                                                        ${generateCardMetrics(h, hDetails, true)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = content;
+        }
+
+        function renderSettings() {
+            const container = document.getElementById('main-content');
+            let content = `
+                <div class="flex items-center gap-4 mb-8">
+                    <button onclick="navigateTo('dashboard')" class="p-2 hover:bg-gray-200 rounded-full transition text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <h2 class="text-xl font-extrabold text-gray-800 tracking-tight">Rule Management</h2>
+                </div>
+                <div class="space-y-4">
+            `;
+            [1, 2, 3].forEach(id => {
+                const details = getRuleDetails(id);
+                const isActive = ruleStates[id];
+                content += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex justify-between items-center transition hover:shadow-md">
+                        <div class="flex items-start gap-3">
+                            <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-base" style="background-color: ${details.lightColor}; color: ${details.color};">${details.icon}</div>
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-sm">${details.name}</h3>
+                                <p class="text-[10px] text-gray-400 leading-relaxed max-w-[180px]">${details.logic}</p>
+                            </div>
+                        </div>
+                        <label class="flex items-center cursor-pointer">
+                            <div class="relative">
+                                <input type="checkbox" class="sr-only" ${isActive ? 'checked' : ''} onchange="toggleRule(${id})">
+                                <div class="block w-10 h-6 rounded-full bg-gray-300"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            });
+            content += `</div>`;
+            container.innerHTML = content;
+        }
+
+        function render() { currentPage === 'dashboard' ? renderDashboard() : renderSettings(); }
+        window.onload = render;
+    </script>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:xd_Signature msdt:dt="string"></mso:xd_Signature>
+<mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Editor msdt:dt="string">Seoyeon Choi</mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Editor>
+<mso:Order msdt:dt="string">313800.000000000</mso:Order>
+<mso:xd_ProgID msdt:dt="string"></mso:xd_ProgID>
+<mso:_ExtendedDescription msdt:dt="string"></mso:_ExtendedDescription>
+<mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Author msdt:dt="string">Seoyeon Choi</mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Author>
+<mso:ComplianceAssetId msdt:dt="string"></mso:ComplianceAssetId>
+<mso:TemplateUrl msdt:dt="string"></mso:TemplateUrl>
+<mso:ContentTypeId msdt:dt="string">0x010100CE6E42C5A3BAB24B847E013BDE0B3A2B</mso:ContentTypeId>
+<mso:TriggerFlowInfo msdt:dt="string"></mso:TriggerFlowInfo>
+<mso:_SourceUrl msdt:dt="string"></mso:_SourceUrl>
+<mso:_SharedFileIndex msdt:dt="string"></mso:_SharedFileIndex>
+<mso:TaxCatchAll msdt:dt="string"></mso:TaxCatchAll>
+<mso:MediaServiceImageTags msdt:dt="string"></mso:MediaServiceImageTags>
+<mso:lcf76f155ced4ddcb4097134ff3c332f msdt:dt="string"></mso:lcf76f155ced4ddcb4097134ff3c332f>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+</head>
+<body class="p-4 bg-gray-50">
+    <div class="max-w-md mx-auto">
+        <header class="text-center mb-6 p-5 bg-white rounded-2xl shadow-lg border-b-[5px] border-blue-600/60">
+            <h1 class="text-xl font-black text-blue-800 tracking-tighter uppercase">Energy Advisor</h1>
+            <p class="text-gray-400 text-[9px] mt-0.5 uppercase tracking-[0.3em] font-black">Intelligent Efficiency Hub</p>
+        </header>
+        <main id="main-content"></main>
+        <footer class="text-center mt-10 p-4 text-gray-300 text-[9px] font-bold uppercase tracking-widest border-t border-gray-200">
+            &copy; 2026 AI Energy Advisor &bull; Live Monitoring
+        </footer>
+    </div>
+</body>
+</html>
