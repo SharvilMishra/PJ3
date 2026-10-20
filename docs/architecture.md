@@ -41,3 +41,14 @@ The current scope does not require MySQL, PostgreSQL, or Supabase. A database wo
 - The example rules produce four overlapping training rows. Choose three rules from training patterns and verify non-overlap in training and test, or define a clear priority policy.
 - Document each rule, assumptions, and calculation before presenting savings as guaranteed.
 - Keep energy calculations and rules in backend services so the dashboard and alert history use consistent results.
+
+## Project brief status
+
+The current app is a working historical-data prototype, but it does not yet satisfy every analytical requirement in the project brief:
+
+- The three alert rules currently reproduce the supplied example conditions. They have not been discovered from the training data.
+- Priority handling emits at most one alert for a reading, but the raw rules overlap on 4 training readings. The brief's requirement is for rules that do not overlap; priority handling is not a substitute for that requirement.
+- The API reports counts against the 30 sparse test rows, but three test timestamps also occur in training and the test file has three `date` mismatches and one `hour` mismatch against `timestamp`. These are diagnostic counts, not an independent model score.
+- The app currently has no real-device connection, user accounts, persistent rule preferences, or database. The visible home and profile are sample presentation data.
+
+The chart reading card exposes daily summaries of every training data field. The test file is reserved for rule evaluation and data-quality diagnostics rather than dashboard history.
